@@ -22,6 +22,7 @@ func main() {
 	router := api.NewRouter()
 
 	// Start server
+	logging.Logger.Info("Starting server at http://localhost:" + config.AppConfig.ServerPort)
 	err := router.Run(":" + config.AppConfig.ServerPort)
 	if err != nil {
 		fmt.Printf("Error when starting the server: %s", err)

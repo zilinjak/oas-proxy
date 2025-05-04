@@ -21,7 +21,9 @@ func getEnvDefault(key string, defaultValue string) string {
 func load() *Config {
 	// TODO Parse args ?
 	// TODO use https://github.com/knadh/koanf
-	targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "https://httpbin.zilinek.fun"))
+	targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "https://tom.preston-werner.com"))
+	//targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "https://preview-k3w-it-14824411752.t.all.web.ne.kosik.systems"))
+	//targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "https://httpbin.zilinek.fun"))
 	//targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "http://localhost:8000"))
 
 	if err != nil {
