@@ -5,7 +5,6 @@ import (
 	"github.com/zilinjak/oas-proxy/internal/config"
 	"github.com/zilinjak/oas-proxy/internal/logging"
 	"io"
-	"log"
 	"net/http"
 )
 
@@ -44,7 +43,12 @@ func (proxy *ProxyController) HandleTraffic(c *gin.Context) {
 		c.String(http.StatusBadGateway, "Proxy error: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logging.Logger.Error("Error closing response body: " + err.Error())
+		}
+	}(resp.Body)
 
 	logging.Logger.Info("Response status: " + http.StatusText(resp.StatusCode))
 
@@ -57,7 +61,7 @@ func (proxy *ProxyController) HandleTraffic(c *gin.Context) {
 	// Copy body
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
-		log.Printf("Error copying response body: %v", err)
+		logging.Logger.Error("Error copying response body: " + err.Error())
 	}
 }
 

@@ -1,6 +1,9 @@
 package config
 
-import "net/url"
+import (
+	"net/url"
+	"strconv"
+)
 
 type Config struct {
 	ServerPort   string
@@ -12,7 +15,7 @@ type Config struct {
 func (c *Config) String() string {
 	return "Config{" +
 		"ServerPort: " + c.ServerPort +
-		", ProxyTimeout: " + string(c.ProxyTimeout) +
+		", ProxyTimeout: " + strconv.Itoa(c.ProxyTimeout) +
 		", TargetURL: " + c.TargetURL.String() +
 		", LogLevel: " + c.LogLevel +
 		"}"
