@@ -2,74 +2,36 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/zilinjak/oas-proxy/internal/config"
+	"github.com/zilinjak/oas-proxy/internal/api/services"
 	"github.com/zilinjak/oas-proxy/internal/logging"
-	"io"
 	"net/http"
 )
 
 type ProxyController struct {
-	Client *http.Client
+	ProxyService *services.ProxyService
 }
 
 func NewProxyController() *ProxyController {
 	return &ProxyController{
-		Client: &http.Client{},
+		ProxyService: services.NewProxyService(),
 	}
 }
 
 func (proxy *ProxyController) HandleTraffic(c *gin.Context) {
-	// Clone original request properly
-	headers := c.Request.Header.Clone()
-	headers.Del("Host") // Remove Host header to avoid conflicts
-
-	// Get data of the request
-	data := c.Request.Body
-
-	// Prepare URL
-	reqUrl := config.AppConfig.TargetURL.Scheme + "://" + config.AppConfig.TargetURL.Host + c.Request.URL.Path
-
-	req, err := http.NewRequest(c.Request.Method, reqUrl, data)
-
+	resp, err := proxy.ProxyService.Forward(c)
+	// Forwarding failed
 	if err != nil {
-		logging.Logger.Error("Error creating request: " + err.Error())
-		c.String(http.StatusBadRequest, "Invalid request: %v", err)
+		logging.Logger.Error("Error forwarding request: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
-	req.Header = headers
-	logging.Logger.Debug("Proxying request to " + req.URL.String())
-	resp, err := proxy.Client.Do(req)
+	err = proxy.ProxyService.CreateResponse(c, resp)
+	// Creating response failed
 	if err != nil {
-		c.String(http.StatusBadGateway, "Proxy error: %v", err)
+		logging.Logger.Error("Error creating response: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			logging.Logger.Error("Error closing response body: " + err.Error())
-		}
-	}(resp.Body)
-
-	logging.Logger.Info("Response status: " + http.StatusText(resp.StatusCode))
-
-	// Copy headers
-	copyHeaders(c.Writer.Header(), resp.Header)
-
-	// Write status
-	c.Status(resp.StatusCode)
-
-	// Copy body
-	_, err = io.Copy(c.Writer, resp.Body)
-	if err != nil {
-		logging.Logger.Error("Error copying response body: " + err.Error())
-	}
-}
-
-// Helper function to copy headers
-func copyHeaders(dst, src http.Header) {
-	for k, vv := range src {
-		for _, v := range vv {
-			dst.Add(k, v)
-		}
-	}
+	// TODO: Validate response against OAS
+	// TODO: Validate request against OAS
 }
