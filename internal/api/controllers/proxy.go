@@ -3,17 +3,20 @@ package controllers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/zilinjak/oas-proxy/internal/api/services"
+	"github.com/zilinjak/oas-proxy/internal/api/validators"
 	"github.com/zilinjak/oas-proxy/internal/logging"
 	"net/http"
 )
 
 type ProxyController struct {
-	ProxyService *services.ProxyService
+	ProxyService  *services.ProxyService
+	OAS3Validator *validators.OAS3Validator
 }
 
-func NewProxyController() *ProxyController {
+func NewProxyController(oasPath string) *ProxyController {
 	return &ProxyController{
-		ProxyService: services.NewProxyService(),
+		ProxyService:  services.NewProxyService(),
+		OAS3Validator: validators.NewOAS3Validator(oasPath),
 	}
 }
 
@@ -32,6 +35,16 @@ func (proxy *ProxyController) HandleTraffic(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
-	// TODO: Validate response against OAS
-	// TODO: Validate request against OAS
+	oasResponse := &http.Response{
+		StatusCode: resp.StatusCode,
+		Header:     resp.Header,
+		Body:       resp.Body,
+	}
+	oasRequest := &http.Request{
+		Method: c.Request.Method,
+		URL:    c.Request.URL,
+		Header: c.Request.Header,
+		Body:   c.Request.Body,
+	}
+	proxy.OAS3Validator.Validate(oasRequest, oasResponse)
 }
