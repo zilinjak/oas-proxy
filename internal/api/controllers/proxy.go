@@ -25,6 +25,10 @@ func (proxy *ProxyController) HandleTraffic(c *gin.Context) {
 	// copy the request body
 	// We need 2 copies of the request body: one for the OAS3 validator and one for the proxy
 	forwardData, oasData, err := internal.CopyData(c.Request.Body)
+	if err != nil {
+		proxy.handleError(c, "failed to copy request body: "+err.Error())
+		return
+	}
 	c.Request.Body = forwardData
 	resp, err := proxy.ProxyService.Forward(c)
 	if err != nil {
@@ -32,6 +36,10 @@ func (proxy *ProxyController) HandleTraffic(c *gin.Context) {
 		return
 	}
 	responseData, oasResponseData, err := internal.CopyData(resp.Body)
+	if err != nil {
+		proxy.handleError(c, "failed to copy response body: "+err.Error())
+		return
+	}
 	resp.Body = responseData
 	err = proxy.ProxyService.CreateResponse(c, resp)
 	if err != nil {
