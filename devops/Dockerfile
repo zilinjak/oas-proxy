@@ -38,6 +38,6 @@ WORKDIR /app
 
 # Expose the port your app runs on (change if needed)
 EXPOSE 8080
-
+ENV GIN_MODE=release
 # Command to run the application
 CMD ["./app"]

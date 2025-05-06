@@ -2,74 +2,57 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/zilinjak/oas-proxy/internal/config"
+	"github.com/zilinjak/oas-proxy/internal"
+	"github.com/zilinjak/oas-proxy/internal/api/services"
+	"github.com/zilinjak/oas-proxy/internal/api/validators"
 	"github.com/zilinjak/oas-proxy/internal/logging"
-	"io"
 	"net/http"
 )
 
 type ProxyController struct {
-	Client *http.Client
+	ProxyService  *services.ProxyService
+	OAS3Validator *validators.OAS3Validator
 }
 
-func NewProxyController() *ProxyController {
+func NewProxyController(oasPath string) *ProxyController {
 	return &ProxyController{
-		Client: &http.Client{},
+		ProxyService:  services.NewProxyService(),
+		OAS3Validator: validators.NewOAS3Validator(oasPath),
 	}
 }
 
 func (proxy *ProxyController) HandleTraffic(c *gin.Context) {
-	// Clone original request properly
-	headers := c.Request.Header.Clone()
-	headers.Del("Host") // Remove Host header to avoid conflicts
-
-	// Get data of the request
-	data := c.Request.Body
-
-	// Prepare URL
-	reqUrl := config.AppConfig.TargetURL.Scheme + "://" + config.AppConfig.TargetURL.Host + c.Request.URL.Path
-
-	req, err := http.NewRequest(c.Request.Method, reqUrl, data)
-
+	// copy the request body
+	// We need 2 copies of the request body: one for the OAS3 validator and one for the proxy
+	forwardData, oasData, err := internal.CopyData(c.Request.Body)
 	if err != nil {
-		logging.Logger.Error("Error creating request: " + err.Error())
-		c.String(http.StatusBadRequest, "Invalid request: %v", err)
+		proxy.handleError(c, "failed to copy request body: "+err.Error())
 		return
 	}
-	req.Header = headers
-	logging.Logger.Debug("Proxying request to " + req.URL.String())
-	resp, err := proxy.Client.Do(req)
+	c.Request.Body = forwardData
+	resp, err := proxy.ProxyService.Forward(c)
 	if err != nil {
-		c.String(http.StatusBadGateway, "Proxy error: %v", err)
+		proxy.handleError(c, err.Error())
 		return
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			logging.Logger.Error("Error closing response body: " + err.Error())
-		}
-	}(resp.Body)
-
-	logging.Logger.Info("Response status: " + http.StatusText(resp.StatusCode))
-
-	// Copy headers
-	copyHeaders(c.Writer.Header(), resp.Header)
-
-	// Write status
-	c.Status(resp.StatusCode)
-
-	// Copy body
-	_, err = io.Copy(c.Writer, resp.Body)
+	responseData, oasResponseData, err := internal.CopyData(resp.Body)
 	if err != nil {
-		logging.Logger.Error("Error copying response body: " + err.Error())
+		proxy.handleError(c, "failed to copy response body: "+err.Error())
+		return
 	}
+	resp.Body = responseData
+	err = proxy.ProxyService.CreateResponse(c, resp)
+	if err != nil {
+		proxy.handleError(c, "failed to create response: "+err.Error())
+		return
+	}
+	c.Request.Body = oasData
+	resp.Body = oasResponseData
+	proxy.OAS3Validator.Validate(c.Request, resp)
 }
 
-// Helper function to copy headers
-func copyHeaders(dst, src http.Header) {
-	for k, vv := range src {
-		for _, v := range vv {
-			dst.Add(k, v)
-		}
-	}
+func (proxy *ProxyController) handleError(c *gin.Context, message string) {
+	logging.Logger.Error("Error reading request body: " + message)
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+
 }

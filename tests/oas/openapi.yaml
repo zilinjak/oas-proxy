@@ -1,0 +1,64 @@
+openapi: 3.0.0
+info:
+  title: Simple API Demo
+  description: Demonstrating various parameter types
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /items/{itemId}:
+    get:
+      summary: Get item information
+      description: Demonstrates path params, query params, headers, cookies, and JSON request
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the item
+        - name: color
+          in: query
+          schema:
+            type: string
+          description: Filter by color
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+          description: Request identifier
+        - name: session_id
+          in: cookie
+          schema:
+            type: string
+          description: Session identifier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                details:
+                  type: boolean
+                  description: Whether to include details
+                format:
+                  type: string
+                  description: Response format
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  itemId:
+                    type: integer
+                  color:
+                    type: string
+                  hasDetails:
+                    type: boolean
+                  requestId:
+                    type: string
+                  sessionId:
+                    type: string

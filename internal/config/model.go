@@ -10,6 +10,7 @@ type Config struct {
 	ProxyTimeout int
 	TargetURL    *url.URL
 	LogLevel     string
+	OASPath      string
 }
 
 func (c *Config) String() string {
@@ -18,5 +19,6 @@ func (c *Config) String() string {
 		", ProxyTimeout: " + strconv.Itoa(c.ProxyTimeout) +
 		", TargetURL: " + c.TargetURL.String() +
 		", LogLevel: " + c.LogLevel +
+		", OASPath: " + c.OASPath +
 		"}"
 }
