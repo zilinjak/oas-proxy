@@ -42,10 +42,10 @@ class SimpleAPIHandler(BaseHTTPRequestHandler):
         # Prepare response
         response = {
             "itemId": item_id,
-            "color": color,
-            "hasDetails": json_data.get('details', False),
-            "requestId": request_id,
-            "sessionId": session_id
+            "color": "color",
+            "hasDetails": False,
+            "requestId": None,
+            "sessionId": "session_id"
         }
 
         self.send_response(200)

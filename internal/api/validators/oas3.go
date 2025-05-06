@@ -1,12 +1,10 @@
 package validators
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/pb33f/libopenapi"
 	validator "github.com/pb33f/libopenapi-validator"
 	"github.com/zilinjak/oas-proxy/internal/logging"
-	"io"
 	"net/http"
 	"os"
 )
@@ -37,21 +35,9 @@ func NewOAS3Validator(oasPath string) *OAS3Validator {
 	}
 }
 
-func (v *OAS3Validator) Validate(request *http.Request, requestData []byte, response *http.Response) {
-	oasResponse := &http.Response{
-		StatusCode: response.StatusCode,
-		Header:     response.Header,
-		Body:       response.Body,
-	}
-	oasRequest := &http.Request{
-		Method: request.Method,
-		URL:    request.URL,
-		Header: request.Header,
-		Body:   io.NopCloser(bytes.NewBuffer(requestData)),
-	}
-
+func (v *OAS3Validator) Validate(request *http.Request, response *http.Response) {
 	fmt.Println("Validating request")
-	requestValid, errs := v.Validator.ValidateHttpRequestResponse(oasRequest, oasResponse)
+	requestValid, errs := v.Validator.ValidateHttpRequestResponse(request, response)
 	if requestValid {
 		logging.Logger.Info("Request is valid")
 	} else {
