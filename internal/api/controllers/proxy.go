@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/zilinjak/oas-proxy/internal/api/services"
 	"github.com/zilinjak/oas-proxy/internal/api/validators"
 	"github.com/zilinjak/oas-proxy/internal/logging"
+	"io"
 	"net/http"
 )
 
@@ -21,30 +23,30 @@ func NewProxyController(oasPath string) *ProxyController {
 }
 
 func (proxy *ProxyController) HandleTraffic(c *gin.Context) {
-	resp, err := proxy.ProxyService.Forward(c)
-	// Forwarding failed
+	// copy the request body
+	// We need 2 copies of the request body: one for the OAS3 validator and one for the proxy
+	oasBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		logging.Logger.Error("Error forwarding request: " + err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		proxy.handleError(c, err.Error())
+		return
+	}
+	forwardingBody := io.NopCloser(bytes.NewBuffer(oasBody))
+
+	resp, err := proxy.ProxyService.Forward(c, forwardingBody)
+	if err != nil {
+		proxy.handleError(c, err.Error())
 		return
 	}
 	err = proxy.ProxyService.CreateResponse(c, resp)
-	// Creating response failed
 	if err != nil {
-		logging.Logger.Error("Error creating response: " + err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		proxy.handleError(c, "failed to create response: "+err.Error())
 		return
 	}
-	oasResponse := &http.Response{
-		StatusCode: resp.StatusCode,
-		Header:     resp.Header,
-		Body:       resp.Body,
-	}
-	oasRequest := &http.Request{
-		Method: c.Request.Method,
-		URL:    c.Request.URL,
-		Header: c.Request.Header,
-		Body:   c.Request.Body,
-	}
-	proxy.OAS3Validator.Validate(oasRequest, oasResponse)
+	proxy.OAS3Validator.Validate(c.Request, oasBody, resp)
+}
+
+func (proxy *ProxyController) handleError(c *gin.Context, message string) {
+	logging.Logger.Error("Error reading request body: " + message)
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+
 }

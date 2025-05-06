@@ -19,13 +19,12 @@ func NewProxyService() *ProxyService {
 	}
 }
 
-func (proxy *ProxyService) Forward(c *gin.Context) (*http.Response, error) {
+func (proxy *ProxyService) Forward(c *gin.Context, requestBody io.ReadCloser) (*http.Response, error) {
 	headers := c.Request.Header.Clone()
 	headers.Del("Host") // Remove Host header to avoid conflicts
-	data := c.Request.Body
 	reqUrl := config.AppConfig.TargetURL.Scheme + "://" + config.AppConfig.TargetURL.Host + c.Request.URL.Path
 
-	req, err := http.NewRequest(c.Request.Method, reqUrl, data)
+	req, err := http.NewRequest(c.Request.Method, reqUrl, requestBody)
 
 	if err != nil {
 		return nil, errors.New("Invalid request: " + err.Error())
@@ -42,13 +41,6 @@ func (proxy *ProxyService) Forward(c *gin.Context) (*http.Response, error) {
 }
 
 func (proxy *ProxyService) CreateResponse(c *gin.Context, resp *http.Response) error {
-	// Copy headers
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			logging.Logger.Error("Error closing response body: " + err.Error())
-		}
-	}(resp.Body)
 	copyHeaders(c.Writer.Header(), resp.Header)
 
 	// Write status
