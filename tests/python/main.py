@@ -1,60 +1,36 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from fastapi import FastAPI, Header, Cookie, Request
+from typing import Optional
+from pydantic import BaseModel
 import json
-from urllib.parse import urlparse, parse_qs
-import re
 
-class SimpleAPIHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        # Parse path parameters
-        item_id_match = re.match(r'/items/(\d+)', self.path)
-        if not item_id_match:
-            self.send_response(404)
-            self.end_headers()
-            return
+app = FastAPI()
 
-        item_id = int(item_id_match.group(1))
+class ObjectModel(BaseModel):
+    integer: int
+    string: str
+    boolean: Optional[bool] = False
 
-        # Parse query parameters
-        parsed_path = urlparse(self.path)
-        query_params = parse_qs(parsed_path.query)
-        color = query_params.get('color', [None])[0]
 
-        # Parse headers
-        request_id = self.headers.get('X-Request-ID')
+@app.post("/{pathInteger}/{pathString}")
+async def get_item(
+        # Request body
+        request: ObjectModel,
+        # Path parameters
+        pathInteger: int,
+        pathString: str,
+        # Header && Cookie parameters
+        x_request_id: Optional[str] = Header(None, convert_underscores=False),
+        session_id: Optional[str] = Cookie(None),
+        # Parameters
+        q: Optional[str] = None,
+) -> ObjectModel:
+    response = ObjectModel(
+        integer=pathInteger,
+        string=pathString,
+        boolean=request.boolean
+    )
+    return response
 
-        # Parse cookies
-        cookies = {}
-        if 'Cookie' in self.headers:
-            for cookie in self.headers['Cookie'].split(';'):
-                if '=' in cookie:
-                    key, value = cookie.strip().split('=', 1)
-                    cookies[key] = value
-        session_id = cookies.get('session_id')
-
-        # Parse JSON body (for GET this is unusual, but we'll handle it)
-        content_length = int(self.headers.get('Content-Length', 0))
-        post_data = self.rfile.read(content_length)
-        try:
-            json_data = json.loads(post_data) if content_length else {}
-        except:
-            json_data = {}
-
-        # Prepare response
-        response = {
-            "itemId": item_id,
-            "color": "color",
-            "hasDetails": False,
-            "requestId": None,
-            "sessionId": "session_id"
-        }
-
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(response).encode('utf-8'))
-
-if __name__ == '__main__':
-    server_address = ('', 8000)
-    httpd = HTTPServer(server_address, SimpleAPIHandler)
-    print('Server running at http://localhost:8000')
-    httpd.serve_forever()
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
