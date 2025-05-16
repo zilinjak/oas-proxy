@@ -11,6 +11,7 @@ type Config struct {
 	TargetURL    *url.URL
 	LogLevel     string
 	OASPath      string
+	StrictMode   bool
 }
 
 func (c *Config) String() string {
@@ -20,5 +21,6 @@ func (c *Config) String() string {
 		", TargetURL: " + c.TargetURL.String() +
 		", LogLevel: " + c.LogLevel +
 		", OASPath: " + c.OASPath +
+		", StrictMode: " + strconv.FormatBool(c.StrictMode) +
 		"}"
 }
