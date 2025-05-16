@@ -36,6 +36,7 @@ func load() *Config {
 		TargetURL:    targetUrl,
 		LogLevel:     getEnvDefault("LOG_LEVEL", "DEBUG"),
 		OASPath:      getEnvDefault("OAS_PATH", "./tests/oas/openapi.yaml"),
+		StrictMode:    getEnvDefault("STRICT_MODE", "false") == "true",
 	}
 
 	return AppConfig

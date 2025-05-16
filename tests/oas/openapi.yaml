@@ -7,7 +7,7 @@ servers:
   - url: http://localhost:8000
 paths:
   /{pathInteger}/{pathString}:
-    get:
+    post:
       summary: Get item information
       description: Demonstrates path params, query params, headers, cookies, and JSON request
       parameters:
