@@ -14,7 +14,6 @@ verifies traffic against OpenAPI Specification (OAS) 3.0. Currently we can valid
 
 ## Road map
  - ✅ JSON Request/Response validation
- - ✅ JSON Response validation
  - ❌ Strict mode
  - ❌ Proper testing coverage
  - ❌ Form Request/Response validation
