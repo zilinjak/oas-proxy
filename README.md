@@ -21,7 +21,7 @@ verifies traffic against OpenAPI Specification (OAS) 3.0. Currently we can valid
  - ❌ OpenTelemetry support
  - ❌ Proper CI/CD + well built Docker image
  - ❌ Proper versioning
- - ❌ Verify support for OAS 3.0->3.1
+ `
 
 
 
