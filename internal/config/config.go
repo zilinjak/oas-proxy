@@ -22,9 +22,9 @@ func load() *Config {
 	// TODO Parse args ?
 	// TODO use https://github.com/knadh/koanf
 	//targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "https://test.k6.io"))
-	targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "https://.t.all.web.ne.kosik.systems"))
+	// targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "https://.t.all.web.ne.kosik.systems"))
 	//targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "https://httpbin.zilinek.fun"))
-	//targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "http://localhost:8000"))
+	targetUrl, err := url.Parse(getEnvDefault("TARGET_URL", "http://localhost:8000"))
 
 	if err != nil {
 		panic("Invalid TARGET_URL: " + err.Error())

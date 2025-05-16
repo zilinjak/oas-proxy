@@ -6,7 +6,7 @@ info:
 servers:
   - url: http://localhost:8000
 paths:
-  /{pathInteger}/{pathString}/{pathBoolean}:
+  /{pathInteger}/{pathString}:
     get:
       summary: Get item information
       description: Demonstrates path params, query params, headers, cookies, and JSON request
@@ -25,18 +25,17 @@ paths:
           in: query
           schema:
             type: string
-          description: Filter by color
+          required: true
         - name: X-Request-ID
           in: header
           schema:
             type: string
-          description: Request identifier
+          required: true
         - name: session_id
           in: cookie
           schema:
             type: string
-          description: Session identifier
-          required: false
+          required: true
       requestBody:
         content:
           application/json:
